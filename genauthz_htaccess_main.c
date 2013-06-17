@@ -87,6 +87,12 @@ htaccess_plugin_rule_hit(request_mngr_t *request_mngr,
 
     printf("Rule \"%s\" hit! -- %s\n", rule->name, __func__);
 
+    /* Search for URI of Subject-ID, extract value */
+    /* Search for URI of Action::Method with value GET */
+    /* Search for URI of Resource::Directory, extract value */
+    /* Search for URI of Resource::File, extract value */
+    /* Run it through libhtaccess for a Permit, Deny and Indeterminate */
+
     print_normalized_xacml_request(request_mngr->xacml_req);
     print_normalized_xacml_response(request_mngr->xacml_res);
     print_loaded_policy(request_mngr->app->parent->xacml_policy);
