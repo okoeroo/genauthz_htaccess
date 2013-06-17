@@ -1,83 +1,96 @@
 #include "genauthz/genauthz_plugin.h"
-#include <curl/curl.h>
+#include <htaccess/htaccess.h>
 
 int
-example_plugin_init(tq_xacml_callout_t *);
+htaccess_plugin_init(tq_xacml_callout_t *);
 void
-example_plugin_uninit(tq_xacml_callout_t *);
+htaccess_plugin_uninit(tq_xacml_callout_t *);
 int
-example_plugin_rule_hit(request_mngr_t *, tq_xacml_rule_t *, tq_xacml_callout_t *);
+htaccess_plugin_rule_hit(request_mngr_t *, tq_xacml_rule_t *, tq_xacml_callout_t *);
 
+#ifndef GENAUTZ_HTACCESS_TITLE
+    #define GENAUTZ_HTACCESS_TITLE "GenAuthZ htaccess"
+#endif
 
 int
-example_plugin_init(tq_xacml_callout_t *callout) {
-    int i;
+htaccess_plugin_init(tq_xacml_callout_t *callout) {
     int argc;
     char **argv;
-    /* char *test; */
+    htaccess_ctx_t *ht_ctx;
 
     argc = genauthz_callout_get_argc(callout);
     argv = genauthz_callout_get_argv(callout);
 
-    for (i = 0; i < argc; i++) {
-        printf("Argv[%d]: %s\n", i, argv[i]);
+    if (argc < 2) {
+        printf("%s: Initialization error, expecting 1 argument for the htaccess file\n",
+                GENAUTZ_HTACCESS_TITLE);
+        return 1;
     }
 
-    /* test = strdup("http://www.slashdot.com"); */
-    /* test = strdup("http://localhost/verlanglijstje/"); */
-    /* genauthz_callout_set_aux(callout, test); */
+    ht_ctx = new_htaccess_ctx();
+    if (!ht_ctx)
+        return 1;
+
+    if (htaccess_parse_file(ht_ctx, argv[1]) != 0) {
+        printf("%s: htaccess_parse_file() failed! Error: %s\n",
+                GENAUTZ_HTACCESS_TITLE,
+                htaccess_get_error(ht_ctx));
+    }
+
+    htaccess_print_ctx(ht_ctx);
+
+    genauthz_callout_set_aux(callout, ht_ctx);
     return 0;
 }
 
 void
-example_plugin_uninit(tq_xacml_callout_t *callout) {
-    printf("%p\n", (void *)callout);
+htaccess_plugin_uninit(tq_xacml_callout_t *callout) {
+    htaccess_ctx_t *ht_ctx = (htaccess_ctx_t *)genauthz_callout_get_aux(callout);
+
+    free_htaccess_ctx(ht_ctx);
     return;
 }
 
+static htaccess_decision_t
+run_search_test(htaccess_ctx_t *ht_ctx, const char *dir, const char *file, const char *user) {
+    htaccess_decision_t rc;
+    rc = htaccess_approve_access(ht_ctx, dir, file, user);
+    return rc;
+
+    printf("Using: dir \"%s\" file \"%s\" user \"%s\" ", dir, file, user);
+    switch (rc) {
+        case HTA_INAPPLICABLE:
+            printf("decision: Inapplicable");
+            break;
+        case HTA_PERMIT:
+            printf("decision: Permit");
+            break;
+        case HTA_DENY:
+            printf("decision: Deny");
+            break;
+        default:
+            printf("decision: Unknown!");
+    }
+    printf("\n");
+    return rc;
+}
+
 int
-example_plugin_rule_hit(request_mngr_t *request_mngr,
+htaccess_plugin_rule_hit(request_mngr_t *request_mngr,
                         tq_xacml_rule_t *rule,
                         tq_xacml_callout_t *callout) {
-    CURL *curl;
-    CURLcode res;
-    int argc;
-    char **argv;
-    int i;
+    htaccess_ctx_t *ht_ctx = (htaccess_ctx_t *)genauthz_callout_get_aux(callout);
 
-    argc = genauthz_callout_get_argc(callout);
-    argv = genauthz_callout_get_argv(callout);
+    if (run_search_test(ht_ctx, "/lat/corpora/archive/1839/imdi/acqui_data/ac-ESF/Info", "esf.html", "corpman") != HTA_PERMIT) {
+        printf("Expected PERMIT\n");
+    }
 
     printf("Rule \"%s\" hit! -- %s\n", rule->name, __func__);
-    for (i = 0; i < argc; i++) {
-        printf("Argv[%d]: %s\n", i, argv[i]);
-    }
 
     print_normalized_xacml_request(request_mngr->xacml_req);
     print_normalized_xacml_response(request_mngr->xacml_res);
     print_loaded_policy(request_mngr->app->parent->xacml_policy);
 
-    /* printf("%s\n", (char *)genauthz_callout_get_aux(callout)); */
-    if (argc != 2)
-        return 1;
-
-    curl = curl_easy_init();
-    if(curl) {
-        printf("---------------> %s\n", argv[1]);
-        curl_easy_setopt(curl, CURLOPT_URL, argv[1]);
-        /* example.com is redirected, so we tell libcurl to follow redirection */
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-
-        /* Perform the request, res will get the return code */
-        res = curl_easy_perform(curl);
-        /* Check for errors */
-        if(res != CURLE_OK)
-            fprintf(stderr, "curl_easy_perform() failed: %s\n",
-                    curl_easy_strerror(res));
-
-        /* always cleanup */
-        curl_easy_cleanup(curl);
-    }
 
     return 0;
 }
