@@ -351,6 +351,8 @@ AC_SUBST([AM_CFLAGS])
 AC_CHECK_LIB([genauthz_core], [genauthz_callout_get_argv],[],
     [AC_MSG_FAILURE([no libgenauthz_core found])])
 
+AC_CHECK_LIB([htaccess], [new_htaccess_ctx],[],
+    [AC_MSG_FAILURE([no libhtaccess found])])
 
 AC_SUBST(ADD_THESE_DEFINES)
 
