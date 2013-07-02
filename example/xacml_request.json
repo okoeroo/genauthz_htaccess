@@ -1,0 +1,30 @@
+{
+    "Request" : {
+        "Subject" : {
+            "Attributes":
+            {
+                "Id" : "x-urn:nl:mpi:tla:xacml:subject:username",
+                "Value" : "okoeroo"
+            }
+        },
+        "Action" : {
+            "Attribute": 
+            {
+                "Id" : "x-urn:nl:mpi:tla:xacml:action:access",
+                "Value" : "x-urn:nl:mpi:tla:xacml:action:access:readwrite"
+            }
+        },
+        "Resource" : {
+            "Attributes": [
+                {
+                    "Id" : "x-urn:nl:mpi:tla:xacml:resource:directory",
+                    "Value" : "/archive/1839/imdi/acqui_data"
+                },
+                {
+                    "Id" : "x-urn:nl:mpi:tla:xacml:resource:file",
+                    "Value" : "foobarmo19f.1.cha"
+                }
+            ]
+        }
+    }
+}
