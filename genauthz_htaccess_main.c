@@ -51,28 +51,71 @@ htaccess_plugin_uninit(tq_xacml_callout_t *callout) {
     return;
 }
 
-static htaccess_decision_t
-run_search_test(htaccess_ctx_t *ht_ctx, const char *dir, const char *file, const char *user) {
-    htaccess_decision_t rc;
-    rc = htaccess_approve_access(ht_ctx, dir, file, user);
-    return rc;
 
-    printf("Using: dir \"%s\" file \"%s\" user \"%s\" ", dir, file, user);
-    switch (rc) {
-        case HTA_INAPPLICABLE:
-            printf("decision: Inapplicable");
-            break;
-        case HTA_PERMIT:
-            printf("decision: Permit");
-            break;
-        case HTA_DENY:
-            printf("decision: Deny");
-            break;
-        default:
-            printf("decision: Unknown!");
+static char *
+htaccess_plugin_search(struct tq_xacml_request_s *xacml_req,
+                       enum ga_xacml_category_e cat_type,
+                       const char *attribute_id) {
+    struct tq_xacml_category_s *req_cat;
+    struct tq_xacml_attribute_s *req_attr;
+    struct tq_xacml_attribute_value_s *req_value;
+
+    if (attribute_id == NULL) return NULL;
+
+    TAILQ_FOREACH(req_cat, &(xacml_req->categories), next) {
+        if (cat_type == GA_XACML_CATEGORY_UNDEFINED ||
+            cat_type == req_cat->type) {
+
+            TAILQ_FOREACH(req_attr, &(req_cat->attributes), next) {
+                /* Match the Rule->Subject->subjectid with the same
+                 * Request->Subject->subjectid */
+                if (strcasecmp(attribute_id, (char *)req_attr->id) == 0) {
+                    if (TAILQ_EMPTY(&(req_attr->values))) {
+                        return NULL;
+                    }
+                } else {
+                    if (TAILQ_EMPTY(&(req_attr->values))) {
+                        return NULL;
+                    }
+
+                    TAILQ_FOREACH(req_value, &(req_attr->values), next) {
+                        /* check if the datatype matches a string */
+                        if (GA_XACML_DATATYPE_STRING == req_value->datatype) {
+                            /* return the first value */
+                            return req_value->data;
+                        }
+                    }
+                }
+            }
+        }
     }
-    printf("\n");
-    return rc;
+    return NULL;
+}
+
+
+static char *
+htaccess_plugin_get_subject_username(struct tq_xacml_request_s *xacml_req) {
+    return htaccess_plugin_search(xacml_req, GA_XACML_CATEGORY_SUBJECT, "x-urn:nl:mpi:tla:xacml:subject:username");
+}
+
+static char *
+htaccess_plugin_get_action_httpmethod(struct tq_xacml_request_s *xacml_req) {
+    return htaccess_plugin_search(xacml_req, GA_XACML_CATEGORY_ACTION, "x-urn:nl:mpi:tla:xacml:action:httpmethod");
+}
+
+static char *
+htaccess_plugin_get_resource_directory(struct tq_xacml_request_s *xacml_req) {
+    return htaccess_plugin_search(xacml_req, GA_XACML_CATEGORY_RESOURCE, "x-urn:nl:mpi:tla:xacml:resource:directory");
+}
+
+static char *
+htaccess_plugin_get_resource_file(struct tq_xacml_request_s *xacml_req) {
+    return htaccess_plugin_search(xacml_req, GA_XACML_CATEGORY_RESOURCE, "x-urn:nl:mpi:tla:xacml:resource:file");
+}
+
+static void
+htaccess_plugin_set_decision(struct tq_xacml_response_s *xacml_res, enum ga_xacml_decision_e decision) {
+    xacml_res->decision = decision;
 }
 
 int
@@ -80,25 +123,41 @@ htaccess_plugin_rule_hit(request_mngr_t *request_mngr,
                         tq_xacml_rule_t *rule,
                         tq_xacml_callout_t *callout) {
     htaccess_ctx_t *ht_ctx = (htaccess_ctx_t *)genauthz_callout_get_aux(callout);
-
-    if (run_search_test(ht_ctx, "/lat/corpora/archive/1839/imdi/acqui_data/ac-ESF/Info", "esf.html", "corpman") != HTA_PERMIT) {
-        printf("Expected PERMIT\n");
-    }
+    htaccess_decision_t rc;
+    char *username, *httpmethod, *directory, *file;
 
     printf("Rule \"%s\" hit! -- %s\n", rule->name, __func__);
 
-    /* Search for URI of Subject-ID, extract value */
-    /* Search for URI of Action::Method with value GET */
-    /* Search for URI of Resource::Directory, extract value */
-    /* Search for URI of Resource::File, extract value */
-    /* Run it through libhtaccess for a Permit, Deny and Indeterminate */
+    username    = htaccess_plugin_get_subject_username(request_mngr->xacml_req);
+    httpmethod  = htaccess_plugin_get_action_httpmethod(request_mngr->xacml_req);
+    directory   = htaccess_plugin_get_resource_directory(request_mngr->xacml_req);
+    file        = htaccess_plugin_get_resource_file(request_mngr->xacml_req);
 
-    print_normalized_xacml_request(request_mngr->xacml_req);
-    print_normalized_xacml_response(request_mngr->xacml_res);
-    print_loaded_policy(request_mngr->app->parent->xacml_policy);
+    if (httpmethod == NULL || strcmp(httpmethod, "GET") == 0) {
+        rc = htaccess_approve_access(ht_ctx, directory, file, username);
+        printf("Using: dir \"%s\" file \"%s\" user \"%s\" ", directory, file, username);
 
-
-    return 0;
+        switch (rc) {
+            case HTA_INAPPLICABLE:
+                printf("decision: Inapplicable");
+                htaccess_plugin_set_decision(request_mngr->xacml_res, GA_XACML_DECISION_NOTAPPLICABLE);
+                break;
+            case HTA_PERMIT:
+                printf("decision: Permit");
+                htaccess_plugin_set_decision(request_mngr->xacml_res, GA_XACML_DECISION_PERMIT);
+                break;
+            case HTA_DENY:
+                printf("decision: Deny");
+                htaccess_plugin_set_decision(request_mngr->xacml_res, GA_XACML_DECISION_DENY);
+                break;
+            default:
+                printf("decision: Unknown!");
+                htaccess_plugin_set_decision(request_mngr->xacml_res, GA_XACML_DECISION_INDETERMINATE);
+        }
+        printf("\n");
+        return 0;
+    }
+    return 1;
 }
 
 
