@@ -1,18 +1,20 @@
 {
     "Request" : {
         "Subject" : {
-            "Attributes":
-            {
-                "Id" : "x-urn:nl:mpi:tla:xacml:subject:username",
-                "Value" : "okoeroo"
-            }
+            "Attributes": [
+                {
+                    "Id" : "x-urn:nl:mpi:tla:xacml:subject:username",
+                    "Value" : "okoeroo"
+                }
+            ]
         },
         "Action" : {
-            "Attribute": 
-            {
-                "Id" : "x-urn:nl:mpi:tla:xacml:action:access",
-                "Value" : "x-urn:nl:mpi:tla:xacml:action:access:readwrite"
-            }
+            "Attributes": [
+                {
+                    "Id" : "x-urn:nl:mpi:tla:xacml:action:access",
+                    "Value" : "x-urn:nl:mpi:tla:xacml:action:access:readwrite"
+                }
+            ]
         },
         "Resource" : {
             "Attributes": [

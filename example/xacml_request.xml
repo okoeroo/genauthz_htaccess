@@ -1,10 +1,10 @@
 <xacml-ctx:request returnpolicyidlist="true" combineddecision="false" xmlns:xacml-ctx="urn:oasis:names:tc:xacml:3.0:core:schema:wd-17">
-    <xacml-ctx:attributes category="urn:oasis:names:tc:xacml:3.0:attribute-category:environment">
-    </xacml-ctx:attributes>
     <xacml-ctx:attributes category="urn:oasis:names:tc:xacml:1.0:subject-category:access-subject">
         <xacml-ctx:attribute attributeid="x-urn:nl:mpi:tla:xacml:subject:username" includeinresult="false">
             <xacml-ctx:attributevalue datatype="http://www.w3.org/2001/XMLSchema#string">okoeroo</xacml-ctx:attributevalue>
         </xacml-ctx:attribute>
+    </xacml-ctx:attributes>
+    <xacml-ctx:attributes category="urn:oasis:names:tc:xacml:3.0:attribute-category:environment">
     </xacml-ctx:attributes>
     <xacml-ctx:attributes category="urn:oasis:names:tc:xacml:3.0:attribute-category:action">
         <xacml-ctx:attribute attributeid="x-urn:nl:mpi:tla:xacml:action:access" includeinresult="false">
@@ -19,5 +19,4 @@
             <xacml-ctx:attributevalue datatype="http://www.w3.org/2001/XMLSchema#string">foobarmo19f.1.cha</xacml-ctx:attributevalue>
         </xacml-ctx:attribute>
     </xacml-ctx:attributes>
-</xacml-ctx:request> 
-
+</xacml-ctx:request>
