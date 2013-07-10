@@ -20,7 +20,7 @@
 
 AC_PREREQ(2.57)
 AC_INIT([General Authorization htaccess Plugin], [1.0.0], okoeroo@gmail.com)
-AC_CONFIG_MACRO_DIR([autodir])
+AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([1.6.3 subdir-objects foreign])
 AC_CONFIG_SRCDIR([genauthz_htaccess.h.in])
 
@@ -345,8 +345,17 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
 AC_SUBST([AM_CFLAGS])
 ####### CFLAGS END
 
-
-
+OPENSSL="no"
+AX_CHECK_OPENSSL([
+   OPENSSL="yes"
+   AC_DEFINE(HAVE_OPENSSL,[1], [Define to 1 if OpenSSL is available])
+])
+AS_IF([test x"$OPENSSL" = x"yes"], [
+   LIBS="$LIBS $OPENSSL_LIBS"
+   LDFLAGS="$LDFLAGS $OPENSSL_LDFLAGS"
+   CPPFLAGS="$CPPFLAGS $OPENSSL_INCLUDES"
+   AC_MSG_RESULT([Using the following OpenSSL settings: $OPENSSL_INCLUDES $OPENSSL_LDFLAGS $OPENSSL_LIBS])
+])
 
 AC_CHECK_LIB([genauthz_core], [genauthz_callout_get_argv],[],
     [AC_MSG_FAILURE([no libgenauthz_core found])])

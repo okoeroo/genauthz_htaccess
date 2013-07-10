@@ -1,3 +1,11 @@
+# Authors:
+# 2013-
+#    Oscar Koeroo <okoeroo@gmail.nl>
+#
+
+## Default flags to run aclocal
+ACLOCAL_AMFLAGS = -I m4
+
 
 AM_CPPFLAGS = \
 	-I$(srcdir) \

@@ -104,12 +104,12 @@ htaccess_plugin_rule_hit(request_mngr_t *request_mngr,
                         tq_xacml_callout_t *callout) {
     htaccess_ctx_t *ht_ctx = (htaccess_ctx_t *)genauthz_callout_get_aux(callout);
     htaccess_decision_t rc;
-    char *username, *access, *directory, *file;
+    char *username, *x_access, *directory, *file;
 
     username    = htaccess_plugin_search(request_mngr->xacml_req,
                                          GA_XACML_CATEGORY_SUBJECT,
                                          "x-urn:nl:mpi:tla:xacml:subject:username");
-    access      = htaccess_plugin_search(request_mngr->xacml_req,
+    x_access    = htaccess_plugin_search(request_mngr->xacml_req,
                                          GA_XACML_CATEGORY_ACTION,
                                          "x-urn:nl:mpi:tla:xacml:action:access");
     directory   = htaccess_plugin_search(request_mngr->xacml_req,
